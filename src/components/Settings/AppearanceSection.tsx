@@ -56,9 +56,6 @@ export default function AppearanceSection() {
           Font: <strong>{fontSize}</strong> | 
           Sidebar: <strong>{sidebarOpen ? 'Open' : 'Closed'}</strong>
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-          Check browser console (F12) for save logs. Changes should save automatically.
-        </Typography>
       </Alert>
 
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
