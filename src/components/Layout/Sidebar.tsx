@@ -15,8 +15,12 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SettingsIcon from '@mui/icons-material/Settings';
-import PeopleIcon from '@mui/icons-material/People';
-import BarChartIcon from '@mui/icons-material/BarChart';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import PersonIcon from '@mui/icons-material/Person';
+import SecurityIcon from '@mui/icons-material/Security';
 import LayersIcon from '@mui/icons-material/Layers';
 
 interface MenuItem {
@@ -24,29 +28,33 @@ interface MenuItem {
   icon?: ReactNode;
   path?: string;
   children?: MenuItem[];
+  divider?: boolean;
 }
 
 const menuItems: MenuItem[] = [
   {
     title: 'Dashboard',
     icon: <DashboardIcon />,
-    path: '/'
+    path: '/',
+    divider: true
   },
   {
     title: 'Reports',
-    icon: <BarChartIcon />,
+    icon: <AssessmentIcon />,
     children: [
-      { title: 'Sales', path: '/reports/sales' },
-      { title: 'Traffic', path: '/reports/traffic' }
-    ]
+      { title: 'Sales', path: '/reports/sales', icon: <AttachMoneyIcon /> },
+      { title: 'Traffic', path: '/reports/traffic', icon: <TrendingUpIcon /> }
+    ],
+    divider: true
   },
   {
     title: 'Management',
-    icon: <PeopleIcon />,
+    icon: <ManageAccountsIcon />,
     children: [
-      { title: 'Users', path: '/management/users' },
-      { title: 'Roles', path: '/management/roles' }
-    ]
+      { title: 'Users', path: '/management/users', icon: <PersonIcon /> },
+      { title: 'Roles', path: '/management/roles', icon: <SecurityIcon /> }
+    ],
+    divider: true
   },
   {
     title: 'Settings',
@@ -116,7 +124,7 @@ export default function Sidebar({ open, drawerWidth, isMobile, onClose }: Sideba
                       onClick={handleMenuItemClick}
                     >
                       <ListItemIcon>
-                        <LayersIcon />
+                        {child.icon || <LayersIcon />}
                       </ListItemIcon>
                       <ListItemText primary={child.title} />
                     </ListItemButton>
@@ -124,6 +132,7 @@ export default function Sidebar({ open, drawerWidth, isMobile, onClose }: Sideba
                 </List>
               </Collapse>
             )}
+            {item.divider && <Divider />}
           </Fragment>
         ))}
       </List>
@@ -160,8 +169,12 @@ export default function Sidebar({ open, drawerWidth, isMobile, onClose }: Sideba
           open={open}
           sx={{
             display: { xs: 'none', md: 'block' },
-            width: drawerWidth,
+            width: open ? drawerWidth : 0,
             flexShrink: 0,
+            transition: (theme) => theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: open ? theme.transitions.duration.enteringScreen : theme.transitions.duration.leavingScreen,
+            }),
             '& .MuiDrawer-paper': {
               width: drawerWidth,
               boxSizing: 'border-box',

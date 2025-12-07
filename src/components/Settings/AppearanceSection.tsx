@@ -1,22 +1,25 @@
 import {
   Box,
   Typography,
-  ToggleButtonGroup,
-  ToggleButton,
-  Slider,
   Switch,
   FormControlLabel,
+  Divider,
+  ToggleButton,
+  ToggleButtonGroup,
+  Slider,
   Paper,
   Alert,
-  Divider
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
-import PaletteIcon from '@mui/icons-material/Palette';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import SettingsBrightnessIcon from '@mui/icons-material/SettingsBrightness';
 import FormatSizeIcon from '@mui/icons-material/FormatSize';
+import PaletteIcon from '@mui/icons-material/Palette';
 import MenuIcon from '@mui/icons-material/Menu';
-import { useThemeSettings, colorSchemes, ColorScheme, FontSize } from '../../contexts/ThemeContext';
+import { useThemeSettings, ColorScheme, colorSchemes, FontSize } from '../../contexts/ThemeContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 const fontSizeMarks = [
   { value: 0, label: 'Small' },
@@ -28,6 +31,9 @@ const fontSizeMarks = [
 const fontSizeValues: FontSize[] = ['small', 'medium', 'large', 'xlarge'];
 
 export default function AppearanceSection() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { addNotification } = useNotifications();
   const {
     mode,
     colorScheme,
@@ -41,7 +47,28 @@ export default function AppearanceSection() {
 
   const fontSizeIndex = fontSizeValues.indexOf(fontSize);
 
+  const handleModeChange = (newMode: 'light' | 'dark' | 'system') => {
+    if (newMode) {
+      // Cast to any to bypass strict PaletteMode check if 'system' is not yet supported by MUI types
+      setMode(newMode as any);
+      addNotification(`Theme mode changed to ${newMode}`);
+    }
+  };
 
+  const handleColorSchemeChange = (scheme: ColorScheme) => {
+    setColorScheme(scheme);
+    addNotification(`Color scheme changed to ${scheme}`);
+  };
+
+  const handleFontSizeChange = (newSize: FontSize) => {
+    setFontSize(newSize, true);
+    addNotification(`Font size set to ${newSize}`);
+  };
+
+  const handleSidebarToggle = (checked: boolean) => {
+    setSidebarOpen(checked);
+    addNotification(`Sidebar preference set to ${checked ? 'Open' : 'Closed'}`);
+  };
 
   return (
     <Box>
@@ -54,7 +81,8 @@ export default function AppearanceSection() {
           Mode: <strong>{mode}</strong> | 
           Color: <strong>{colorScheme}</strong> | 
           Font: <strong>{fontSize}</strong> | 
-          Sidebar: <strong>{sidebarOpen ? 'Open' : 'Closed'}</strong>
+          Sidebar Pref: <strong>{sidebarOpen ? 'Open' : 'Closed'}</strong> |
+          Screen: <strong>{isMobile ? 'Mobile (<900px)' : 'Desktop (>=900px)'}</strong>
         </Typography>
       </Alert>
 
@@ -77,7 +105,7 @@ export default function AppearanceSection() {
         <ToggleButtonGroup
           value={mode}
           exclusive
-          onChange={(_e, newMode) => newMode && setMode(newMode)}
+          onChange={(_e, newMode) => handleModeChange(newMode)}
           aria-label="theme mode"
           fullWidth
           sx={{
@@ -118,7 +146,7 @@ export default function AppearanceSection() {
             <Paper
               key={scheme}
               elevation={colorScheme === scheme ? 8 : 2}
-              onClick={() => setColorScheme(scheme)}
+              onClick={() => handleColorSchemeChange(scheme)}
               sx={{
                 p: 2,
                 cursor: 'pointer',
@@ -168,7 +196,7 @@ export default function AppearanceSection() {
             }}
             onChangeCommitted={(_e, value) => {
               // Save to DB when user stops dragging
-              setFontSize(fontSizeValues[value as number], true);
+              handleFontSizeChange(fontSizeValues[value as number]);
             }}
             min={0}
             max={3}
@@ -203,33 +231,12 @@ export default function AppearanceSection() {
           control={
             <Switch
               checked={sidebarOpen}
-              onChange={(e) => setSidebarOpen(e.target.checked)}
+              onChange={(e) => handleSidebarToggle(e.target.checked)}
               color="primary"
             />
           }
           label="Open sidebar by default on desktop"
         />
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, ml: 4 }}>
-          This setting only affects desktop view. On mobile, the sidebar is always hidden by default.
-        </Typography>
-      </Box>
-
-      {/* Preview Section */}
-      <Box
-        sx={{
-          mt: 4,
-          p: 3,
-          borderRadius: 3,
-          background: `linear-gradient(135deg, ${colorSchemes[colorScheme].primary} 0%, ${colorSchemes[colorScheme].secondary} 100%)`,
-          color: 'white',
-        }}
-      >
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-          Theme Preview
-        </Typography>
-        <Typography variant="body2">
-          Your selected theme is being applied across the entire application. All buttons, headers, and accent colors will use your chosen color scheme.
-        </Typography>
       </Box>
     </Box>
   );

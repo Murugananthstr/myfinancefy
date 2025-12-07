@@ -1,4 +1,4 @@
-import { Typography, Container, Button } from '@mui/material';
+import { Typography, Box, Button } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LandingPage() {
@@ -13,7 +13,7 @@ export default function LandingPage() {
   }
 
   return (
-    <Container>
+    <Box sx={{ my: 4 }}>
       <Typography variant="h3" component="h1" gutterBottom>
         Welcome to the Landing Page
       </Typography>
@@ -23,6 +23,6 @@ export default function LandingPage() {
       <Button variant="contained" color="secondary" onClick={handleLogout}>
         Log Out
       </Button>
-    </Container>
+    </Box>
   );
 }

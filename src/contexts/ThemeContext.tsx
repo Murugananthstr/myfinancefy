@@ -81,14 +81,25 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       try {
         // If user is logged in, load from Firestore
         if (currentUser) {
+          console.log('📥 Loading theme settings for user:', currentUser.uid);
           const settingsDoc = await getDoc(doc(db, 'users', currentUser.uid, 'settings', 'preferences'));
+          
           if (settingsDoc.exists()) {
             const data = settingsDoc.data();
+            console.log('📄 Loaded settings data:', data);
+            
             setModeState(data.theme?.mode || 'light');
             setColorSchemeState(data.theme?.colorScheme || 'purple');
             setFontSizeState(data.theme?.fontSize || 'medium');
-            setSidebarOpenState(data.sidebar?.defaultOpen !== false);
+            
+            // Explicitly handle sidebar setting
+            const loadedSidebarOpen = data.sidebar?.defaultOpen;
+            console.log('Sidebar setting from DB:', loadedSidebarOpen);
+            
+            // If undefined, default to true. If defined, use the value.
+            setSidebarOpenState(loadedSidebarOpen !== false);
           } else {
+            console.log('⚠️ No settings found, creating default...');
             // Create default settings document if it doesn't exist
             await setDoc(
               doc(db, 'users', currentUser.uid, 'settings', 'preferences'),
@@ -104,10 +115,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
                 updatedAt: new Date(),
               }
             );
+            setSidebarOpenState(true);
           }
+        } else {
+          console.log('👤 No current user, skipping settings load');
         }
       } catch (err) {
-        console.error('Error loading theme settings:', err);
+        console.error('❌ Error loading theme settings:', err);
       } finally {
         setLoading(false);
       }
