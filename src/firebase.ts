@@ -4,12 +4,12 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAslhQzd6sQaWkMtMOzy0FLpqCRuUC1Eww",
-  authDomain: "myfinancefy.firebaseapp.com",
-  projectId: "myfinancefy",
-  storageBucket: "myfinancefy.firebasestorage.app",
-  messagingSenderId: "914225680916",
-  appId: "1:914225680916:web:5aa555727e258f777c8d01"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);

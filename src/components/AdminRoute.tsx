@@ -6,10 +6,10 @@ import { Link as RouterLink } from 'react-router-dom';
 // ⚠️ SECURITY: Replace this with your actual admin email(s)
 // In a real production app, you would check a 'role' field in the user's Firestore document
 // or a Custom Claim on the Firebase User object.
-const ADMIN_EMAILS = [
-  'ananthsoft@gmail.com', 
-  // Add your email here to gain access
-];
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAIL || '')
+  .split(',')
+  .map((email: string) => email.trim())
+  .filter((email: string) => email.length > 0);
 
 interface AdminRouteProps {
   children: React.ReactNode;
