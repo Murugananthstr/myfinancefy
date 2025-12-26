@@ -63,6 +63,9 @@ const menuItems: MenuItem[] = [
   }
 ];
 
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import { useAdmin } from '../../hooks/useAdmin';
+
 interface SidebarProps {
   open: boolean;
   drawerWidth: number;
@@ -73,6 +76,18 @@ interface SidebarProps {
 export default function Sidebar({ open, drawerWidth, isMobile, onClose }: SidebarProps) {
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
+  const { isAdmin } = useAdmin();
+
+  // Dynamically compute menu items to include Admin Panel if user is admin
+  const displayMenuItems: MenuItem[] = [
+    ...menuItems,
+    ...(isAdmin ? [{
+      title: 'Admin Panel',
+      icon: <AdminPanelSettingsIcon />,
+      path: '/admin',
+      divider: true
+    }] : [])
+  ];
 
   const handleSubmenuClick = (title: string) => {
     setOpenSubmenus((prev) => ({
@@ -91,7 +106,7 @@ export default function Sidebar({ open, drawerWidth, isMobile, onClose }: Sideba
       <Toolbar /> {/* Spacer for header */}
       <Divider />
       <List>
-        {menuItems.map((item) => (
+        {displayMenuItems.map((item) => (
           <Fragment key={item.title}>
             <ListItemButton 
               onClick={() => {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
 export interface Notification {
@@ -51,7 +51,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     { id: 2, text: "Sales report available", timestamp: Date.now() - 60 * 60 * 1000, read: false },
     { id: 3, text: "System update scheduled", timestamp: Date.now() - 2 * 60 * 60 * 1000, read: true },
   ]);
-  const [now, setNow] = useState(Date.now());
+  const [, setNow] = useState(Date.now());
 
   // Update relative time every minute
   useEffect(() => {
