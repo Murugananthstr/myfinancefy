@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Box, 
   Button, 
@@ -11,22 +11,34 @@ import {
   Avatar
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Check for success message from signup redirect
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      // Clear the state so message doesn't persist on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     try {
       setError('');
+      setSuccessMessage(''); // Clear success message when attempting login
       setLoading(true);
       await login(email, password);
       navigate('/');
@@ -93,6 +105,7 @@ export default function LoginPage() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Sign in to continue to your account
           </Typography>
+          {successMessage && <Alert severity="success" sx={{ mt: 2, width: '100%', borderRadius: 2 }}>{successMessage}</Alert>}
           {error && <Alert severity="error" sx={{ mt: 2, width: '100%', borderRadius: 2 }}>{error}</Alert>}
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
             <TextField

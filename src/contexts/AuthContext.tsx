@@ -52,7 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       displayName: email.split('@')[0], // Default to email prefix
       photoURL: null,
       role: 'user', // Default role
-      status: 'active', // Default status
+      status: 'pending', // Default status
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });

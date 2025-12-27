@@ -34,11 +34,17 @@ export default function SignupPage() {
       setError('');
       setLoading(true);
       await signup(email, password);
-      navigate('/');
+      // Redirect to login page with success message
+      navigate('/login', {
+        state: {
+          message: 'Account created successfully! Please wait for admin approval before logging in.'
+        }
+      });
     } catch (err: any) {
       setError('Failed to create an account: ' + err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
