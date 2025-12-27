@@ -57,6 +57,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       updatedAt: serverTimestamp()
     });
     
+    // Create default theme settings
+    await setDoc(
+      doc(db, 'users', userCredential.user.uid, 'settings', 'preferences'),
+      {
+        theme: {
+          mode: 'light',
+          colorScheme: 'purple',
+          fontSize: 'medium',
+        },
+        sidebar: {
+          defaultOpen: true,
+        },
+        updatedAt: new Date(),
+      }
+    );
+    
     return userCredential;
   }
 

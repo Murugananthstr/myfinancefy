@@ -4,19 +4,22 @@ service cloud.firestore {
     
     // User Management Rules
     match /users/{userId} {
-      // Allow new users to sign up
       allow create: if request.auth != null;
-      
-      // Allow users to read/update their own profile
-      // OR allow admins (by email or role) to access all profiles
       allow read, update: if request.auth != null && (
         request.auth.uid == userId || 
         isAdmin()
       );
-      
       allow delete: if isAdmin();
+      
+      // Subcollection: settings
+      match /settings/{settingId} { 
+      allow read, write: if request.auth != null && ( 
+        request.auth.uid == userId ||
+        isAdmin() 
+        ); 
+      }
     }
-
+    
     // Role Management Rules
     match /roles/{roleId} {
       allow read: if request.auth != null;
@@ -24,16 +27,13 @@ service cloud.firestore {
     }
     
     // Helper function to check if user is admin
-    // 1. Checks if the user's email matches the hardcoded admin email (Quickest fix)
-    // 2. Checks if the user has a 'role' field set to 'admin' in their profile
     function isAdmin() {
       return request.auth != null && (
-        request.auth.token.email == 'ananthsoft@gmail.com' || 
+       // request.auth.token.email == 'ananthsoft@gmail.com' || 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
       );
     }
     
-    // Default rule: Deny everything else
     match /{document=**} {
       allow read, write: if false;
     }
