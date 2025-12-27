@@ -13,6 +13,9 @@ import {
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getDoc, doc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { db, auth } from '../firebase';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -40,12 +43,37 @@ export default function LoginPage() {
       setError('');
       setSuccessMessage(''); // Clear success message when attempting login
       setLoading(true);
-      await login(email, password);
+      
+      const userCredential = await login(email, password);
+      
+      // Check user status in Firestore
+      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        
+        if (userData.status === 'pending') {
+          // Sign out the user immediately
+          await signOut(auth);
+          setSuccessMessage('Please wait for admin approval before logging in.');
+          setLoading(false);
+          return;
+        } else if (userData.status === 'disabled') {
+          // Sign out the user immediately
+          await signOut(auth);
+          setError('Your account has been disabled. Please contact the administrator.');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // If status is active or not set, proceed to dashboard
       navigate('/');
     } catch (err: any) {
       setError('Failed to log in: ' + err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
