@@ -91,244 +91,239 @@ const DEFAULT_ROLES: RoleData[] = [
 ];
 
 const AVAILABLE_PERMISSIONS = [
-    { id: 'view_dashboard', label: 'View Dashboard' },
-    { id: 'manage_users', label: 'Manage Users' },
-    { id: 'manage_roles', label: 'Manage Roles' },
-    { id: 'view_reports', label: 'View Reports' },
-    { id: 'manage_content', label: 'Manage Content' },
-    { id: 'system_settings', label: 'System Settings' },
-    { id: 'maintenance', label: 'Database Maintenance' },
+    // Navigation App (Admin System)
+    { id: 'view_dashboard', label: 'Admin: View Dashboard' },
+    { id: 'manage_users', label: 'Admin: Manage Users' },
+    { id: 'manage_roles', label: 'Admin: Manage Roles' },
+    { id: 'system_settings', label: 'Admin: System Settings' },
+    { id: 'maintenance', label: 'Admin: Database Maintenance' },
+
+    // Finance App
+    { id: 'finance:access', label: 'Finance: Access App' },
+    { id: 'finance:view_dashboard', label: 'Finance: View Dashboard' },
+    { id: 'finance:manage_invoices', label: 'Finance: Manage Invoices' },
+    { id: 'finance:approve_expenses', label: 'Finance: Approve Expenses' },
+
+    // HR App
+    { id: 'hr:access', label: 'HR: Access App' },
+    { id: 'hr:view_employees', label: 'HR: View Employees' },
+    { id: 'hr:manage_payroll', label: 'HR: Manage Payroll' },
+    { id: 'hr:manage_leave', label: 'HR: Manage Leave Requests' },
 ];
 
 const AdminPage = () => {
-  const { isSuperAdmin } = useAdmin();
-  const [currentTab, setCurrentTab] = useState(0);
-  
-  // Seed State
-  const [seedLoading, setSeedLoading] = useState(false);
-  const [seedStatus, setSeedStatus] = useState<{ type: 'success' | 'error' | 'info', message: string } | null>(null);
-  const [seedLogs, setSeedLogs] = useState<string[]>([]);
+  const { userProfile } = useAdmin();
 
-  // User Management State
+  // Calculate permissions
+  const [currentTab, setCurrentTab] = useState(0);
+  const [roles, setRoles] = useState<RoleData[]>(DEFAULT_ROLES);
   const [users, setUsers] = useState<UserData[]>([]);
-  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(false);
   
-  // Role Management State
-  const [roles, setRoles] = useState<RoleData[]>([]);
-  // const [rolesLoading, setRolesLoading] = useState(true);
+  // Specific stats
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [activeUsers, setActiveUsers] = useState(0);
+  const [pendingUsers, setPendingUsers] = useState(0);
+  const [adminUsers, setAdminUsers] = useState(0);
+
+  // Role management logic
   const [roleMenuAnchor, setRoleMenuAnchor] = useState<null | HTMLElement>(null);
-  const [selectedUserForRole, setSelectedUserForRole] = useState<string | null>(null);
-  
-  // New Role Dialog State
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [openRoleDialog, setOpenRoleDialog] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleData | null>(null);
-  const [roleForm, setRoleForm] = useState<{
-      id: string;
-      name: string;
-      description: string;
-      color: string;
-      permissions: string[];
-  }>({ id: '', name: '', description: '', color: 'default', permissions: [] });
+  const [roleForm, setRoleForm] = useState<RoleData>({
+      id: '', name: '', description: '', color: 'default', permissions: [], isSystem: false
+  });
 
+  // Database seed logic
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [seedStatus, setSeedStatus] = useState<{ type: 'success' | 'warning' | 'error' | 'info'; message: string } | null>(null);
+  const [seedLogs, setSeedLogs] = useState<string[]>([]);
+  
   useEffect(() => {
-    fetchRoles();
     fetchUsers();
+    fetchRoles();
   }, []);
 
-  const fetchRoles = async () => {
-      // setRolesLoading(true);
-      try {
-          const rolesRef = collection(db, 'roles');
-          const snapshot = await getDocs(rolesRef);
-          
-          if (snapshot.empty) {
-              console.log("No roles found, initializing defaults...");
-              const batchPromises = DEFAULT_ROLES.map(role => 
-                  setDoc(doc(db, 'roles', role.id), role)
-              );
-              await Promise.all(batchPromises);
-              setRoles(DEFAULT_ROLES);
-          } else {
-              const fetchedRoles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RoleData));
-              setRoles(fetchedRoles);
-          }
-      } catch (error) {
-          console.error("Error fetching roles", error);
-      } finally {
-          // setRolesLoading(false);
-      }
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
   };
-
+  
   const fetchUsers = async () => {
     setUsersLoading(true);
-    console.log("Fetching users from Firestore...");
     try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef); 
-      
-      const snapshot = await getDocs(q);
-      console.log(`Fetched ${snapshot.size} users.`);
-      
-      const fetchedUsers: UserData[] = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            email: data.email || 'No Email',
-            displayName: data.displayName || 'No Name',
-            photoURL: data.photoURL || null,
-            createdAt: data.createdAt, 
-            updatedAt: data.updatedAt,
-            role: data.role || 'user', 
-            status: data.status,
-            lastLogin: data.lastLogin
-        } as UserData;
+      const q = query(collection(db, 'users'));
+      const querySnapshot = await getDocs(q);
+      const fetchedUsers: UserData[] = [];
+      querySnapshot.forEach((doc) => {
+        fetchedUsers.push({ id: doc.id, ...doc.data() } as UserData);
       });
-      
       setUsers(fetchedUsers);
-    } catch (error: any) {
+      
+      // Update stats
+      setTotalUsers(fetchedUsers.length);
+      setActiveUsers(fetchedUsers.filter(u => u.status === 'active').length);
+      setPendingUsers(fetchedUsers.filter(u => u.status === 'pending').length);
+      setAdminUsers(fetchedUsers.filter(u => u.role === 'admin' || u.role === 'super_admin').length);
+      
+    } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
       setUsersLoading(false);
     }
   };
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setCurrentTab(newValue);
-  };
-
-  const handleSeedDatabase = async () => {
-    if (!window.confirm('Are you sure? This will overwrite default configuration data in Firestore.')) {
-      return;
-    }
-
-    setSeedLoading(true);
-    setSeedStatus(null);
-    setSeedLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Starting database seed...`]);
-
+  const fetchRoles = async () => {
     try {
-      await seedDatabase();
-      setSeedStatus({ type: 'success', message: 'Database seeded successfully!' });
-      setSeedLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Seed completed successfully.`]);
-    } catch (error: any) {
-      console.error(error);
-      setSeedStatus({ type: 'error', message: `Error seeding database: ${error.message}` });
-      setSeedLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Error: ${error.message}`]);
-    } finally {
-      setSeedLoading(false);
-    }
-  };
-
-  const handleStatusChange = async (userId: string, currentStatus: string | undefined) => {
-    const newStatus = currentStatus === 'disabled' ? 'active' : 'disabled';
-    try {
-        await updateDoc(doc(db, 'users', userId), {
-            status: newStatus,
-            updatedAt: serverTimestamp()
-        });
-        setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+      const q = query(collection(db, 'roles'));
+      const querySnapshot = await getDocs(q);
+      const fetchedRoles: RoleData[] = [];
+      querySnapshot.forEach((doc) => {
+        fetchedRoles.push({ id: doc.id, ...doc.data() } as RoleData);
+      });
+      // If no roles in DB (first run), keep default roles, otherwise use DB roles
+      // If no roles in DB (first run), keep default roles, otherwise use DB roles
+      if (fetchedRoles.length > 0) {
+        // Ensure all roles have permissions array
+        const safeRoles = fetchedRoles.map(r => ({
+            ...r,
+            permissions: Array.isArray(r.permissions) ? r.permissions : []
+        }));
+        setRoles(safeRoles);
+      } else {
+        // Optional: could auto-seed here or just warn
+        console.log("No roles found in DB, using defaults");
+      }
     } catch (error) {
-        console.error("Error updating status:", error);
-        alert("Failed to update user status");
+       console.error("Error fetching roles:", error);
     }
   };
 
   const handleRoleClick = (event: React.MouseEvent<HTMLElement>, userId: string) => {
-      setRoleMenuAnchor(event.currentTarget);
-      setSelectedUserForRole(userId);
+    setRoleMenuAnchor(event.currentTarget);
+    setSelectedUserId(userId);
   };
 
   const handleRoleSelect = async (roleId: string) => {
-      if (!selectedUserForRole) return;
-      
+     if (!selectedUserId) return;
+     try {
+         await updateDoc(doc(db, 'users', selectedUserId), { role: roleId });
+         // Optimistic update
+         setUsers(users.map(u => u.id === selectedUserId ? { ...u, role: roleId } : u));
+         setRoleMenuAnchor(null);
+         setSelectedUserId(null);
+     } catch (error) {
+         console.error("Error updating role:", error);
+     }
+  };
+
+  const handleStatusChange = async (userId: string, currentStatus: string) => {
+      // Toggle logic: active -> disabled, anything else -> active
+      const newStatus = currentStatus === 'disabled' ? 'active' : 'disabled';
       try {
-          await updateDoc(doc(db, 'users', selectedUserForRole), {
-              role: roleId,
-              updatedAt: serverTimestamp()
-          });
-          setUsers(users.map(u => u.id === selectedUserForRole ? { ...u, role: roleId } : u));
+          await updateDoc(doc(db, 'users', userId), { status: newStatus });
+           // Optimistic update
+          setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
       } catch (error) {
-           console.error("Error updating role:", error);
-           alert("Failed to update user role");
-      } finally {
-          setRoleMenuAnchor(null);
-          setSelectedUserForRole(null);
+          console.error("Error updating status:", error);
       }
   };
 
-  const handleEditRole = (role: RoleData) => {
-      setEditingRole(role);
-      setRoleForm({
-          id: role.id,
-          name: role.name,
-          description: role.description,
-          color: role.color,
-          permissions: role.permissions || []
-      });
-      setOpenRoleDialog(true);
-  };
-
-  const handlePermissionToggle = (permissionId: string) => {
-      setRoleForm(prev => {
-          const permissions = prev.permissions.includes(permissionId)
-              ? prev.permissions.filter(p => p !== permissionId)
-              : [...prev.permissions, permissionId];
-          return { ...prev, permissions };
-      });
-  };
-
-  const handleSaveRole = async () => {
-      if (!roleForm.id || !roleForm.name) return;
-      
-      try {
-          const roleData: RoleData = {
-              ...roleForm,
-              permissions: roleForm.permissions,
-              isSystem: editingRole?.isSystem || false
-          };
-          
-          await setDoc(doc(db, 'roles', roleForm.id), roleData);
-          
-          if (editingRole) {
-              setRoles(roles.map(r => r.id === roleForm.id ? roleData : r));
-          } else {
-              setRoles([...roles, roleData]);
-          }
-          setOpenRoleDialog(false);
-      } catch (error) {
-          console.error("Error saving role", error);
-          alert("Failed to save role");
-      }
-  };
-
-  const handleDeleteRole = async (roleId: string) => {
-      if (!window.confirm("Are you sure you want to delete this role?")) return;
-      try {
-          await deleteDoc(doc(db, 'roles', roleId));
-          setRoles(roles.filter(r => r.id !== roleId));
-      } catch (error) {
-          console.error("Error deleting role", error);
-      }
-  };
-
-  const totalUsers = users.length;
-  const adminUsers = users.filter(u => u.role === 'admin').length; 
-  const activeUsers = users.filter(u => u.status !== 'disabled').length; 
-  const pendingUsers = users.filter(u => u.status === 'pending').length;
-
-  const formatDate = (timestamp: any) => {
-    if (!timestamp || !timestamp.seconds) return 'N/A';
-    return new Date(timestamp.seconds * 1000).toLocaleDateString();
+  const getRoleName = (roleId: string) => {
+      const role = roles.find(r => r.id === roleId);
+      return role ? role.name : roleId;
   };
 
   const getRoleColor = (roleId: string) => {
       const role = roles.find(r => r.id === roleId);
-      return role?.color || 'default';
+      return role ? role.color : 'default';
   };
-  
-  const getRoleName = (roleId: string) => {
-      const role = roles.find(r => r.id === roleId);
-      return role?.name || roleId;
+
+  const formatDate = (timestamp: any) => {
+      if (!timestamp) return 'N/A';
+      if (typeof timestamp.toDate === 'function') {
+          return timestamp.toDate().toLocaleDateString();
+      }
+      return new Date(timestamp).toLocaleDateString();
   };
+
+  const handleEditRole = (role: RoleData) => {
+      setEditingRole(role);
+      // Ensure permissions is an array to avoid crashes
+      setRoleForm({
+          ...role,
+          permissions: Array.isArray(role.permissions) ? role.permissions : []
+      });
+      setOpenRoleDialog(true);
+  };
+
+  const handleDeleteRole = async (roleId: string) => {
+      if(!window.confirm("Are you sure you want to delete this role?")) return;
+      try {
+          await deleteDoc(doc(db, 'roles', roleId));
+          setRoles(roles.filter(r => r.id !== roleId));
+      } catch (error) {
+          console.error("Error deleting role:", error);
+      }
+  };
+
+  const handleSaveRole = async () => {
+       try {
+           // Ensure ID is safe
+           const roleDocId = roleForm.id || roleForm.name.toLowerCase().replace(/\s+/g, '_');
+           const dataToSave = { ...roleForm, id: roleDocId };
+           
+           console.log("Saving role data:", dataToSave); // Debug log
+
+           await setDoc(doc(db, 'roles', roleDocId), dataToSave);
+           
+           if (editingRole) {
+             setRoles(roles.map(r => r.id === editingRole.id ? dataToSave : r));
+           } else {
+             setRoles([...roles, dataToSave]);
+           }
+           setOpenRoleDialog(false);
+       } catch (error) {
+           console.error("Error saving role:", error);
+       }
+  };
+
+  const handlePermissionToggle = (permId: string) => {
+      const currentPerms = roleForm.permissions;
+      if (currentPerms.includes(permId)) {
+          setRoleForm({ ...roleForm, permissions: currentPerms.filter(p => p !== permId) });
+      } else {
+          setRoleForm({ ...roleForm, permissions: [...currentPerms, permId] });
+      }
+  };
+
+  const handleSeedDatabase = async () => {
+    setSeedLoading(true);
+    setSeedLogs([]);
+    setSeedStatus(null);
+    
+    // Helper to log to UI
+    const log = (msg: string) => setSeedLogs(prev => [...prev, msg]);
+
+    try {
+        log("Starting database seed...");
+        await seedDatabase();
+        log("Database seeded successfully");
+        setSeedStatus({ type: 'success', message: 'Database seeded successfully' });
+        fetchUsers(); // Refresh users
+    } catch (error: any) {
+        log("Error: " + error.message);
+        setSeedStatus({ type: 'error', message: 'Seeding failed: ' + error.message });
+    } finally {
+        setSeedLoading(false);
+    }
+  };
+
+  // Calculate permissions
+  const currentUserRoleDef = roles.find(r => r.id === userProfile?.role);
+  // Allow if role explicitly has 'maintenance' OR 'all' permission, or if they are super_admin hardcoded fallback
+  const canViewMaintenance = currentUserRoleDef?.permissions?.some(p => p === 'maintenance' || p === 'all') || userProfile?.role === 'super_admin';
+  const canViewRoles = currentUserRoleDef?.permissions?.some(p => p === 'manage_roles' || p === 'all') || userProfile?.role === 'super_admin' || userProfile?.role === 'admin';
 
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
@@ -361,8 +356,8 @@ const AdminPage = () => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={currentTab} onChange={handleTabChange} aria-label="admin tabs">
           <Tab label="User Management" icon={<GroupIcon />} iconPosition="start" />
-          <Tab label="Role Definitions" icon={<BadgeIcon />} iconPosition="start" />
-          {isSuperAdmin && (
+          {canViewRoles && <Tab label="Role Definitions" icon={<BadgeIcon />} iconPosition="start" />}
+          {canViewMaintenance && (
             <Tab label="Database Maintenance" icon={<StorageIcon />} iconPosition="start" />
           )}
         </Tabs>
@@ -549,7 +544,7 @@ const AdminPage = () => {
       )}
 
       {/* Tab 1: Role Definitions */}
-      {currentTab === 1 && (
+      {currentTab === 1 && canViewRoles && (
          <Paper elevation={0} sx={{ border: '1px solid #e5e7eb', borderRadius: 2, p: 3 }}>
              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                  <Typography variant="h6">System Roles</Typography>
@@ -668,7 +663,7 @@ const AdminPage = () => {
       )}
 
       {/* Tab 2: Database Maintenance */}
-      {currentTab === 2 && isSuperAdmin && (
+      {currentTab === 2 && canViewMaintenance && (
         <Paper elevation={0} sx={{ border: '1px solid #e5e7eb', borderRadius: 2, p: 4 }}>
           {/* ... existing maintenance content ... */}
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
