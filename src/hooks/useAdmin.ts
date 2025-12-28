@@ -14,9 +14,22 @@ export function useAdmin() {
     isSuperAdmin
   });
 
+  const hasPermission = (permission: string) => {
+    // Debug log for permission check
+    const hasAccess = (() => {
+      if (isSuperAdmin) return true;
+      if (userProfile?.permissions?.includes('all')) return true;
+      return userProfile?.permissions?.includes(permission) || false;
+    })();
+    
+    // console.log(`[useAdmin] Checking '${permission}' for role '${userProfile?.role}': ${hasAccess}`);
+    return hasAccess;
+  };
+
   return {
     isAdmin,
     isSuperAdmin,
+    hasPermission,
     currentUser,
     userProfile
   };

@@ -11,6 +11,7 @@ import PlaceholderPage from './pages/PlaceholderPage';
 import SettingsPage from './pages/SettingsPage';
 import AdminPage from './pages/AdminPage';
 import AdminRoute from './components/AdminRoute';
+import BondRoutes from './apps/bonds/routes';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { CssBaseline } from '@mui/material';
 
@@ -37,6 +38,9 @@ function App() {
                     <AdminPage />
                   </AdminRoute>
                 } />
+                
+                {/* Apps */}
+                <Route path="/bonds/*" element={<BondRoutes />} />
               </Route>
             </Routes>
           </Router>

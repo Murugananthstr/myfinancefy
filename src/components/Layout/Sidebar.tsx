@@ -8,7 +8,9 @@ import {
   ListItemText, 
   Collapse,
   Toolbar,
-  Divider
+  Divider,
+  Box,
+  Typography
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import ExpandLess from '@mui/icons-material/ExpandLess';
@@ -22,6 +24,7 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
 import LayersIcon from '@mui/icons-material/Layers';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 
 interface MenuItem {
   title: string;
@@ -76,7 +79,7 @@ interface SidebarProps {
 export default function Sidebar({ open, drawerWidth, isMobile, onClose }: SidebarProps) {
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
-  const { isAdmin } = useAdmin();
+  const { isAdmin, hasPermission } = useAdmin();
 
   // Dynamically compute menu items to include Admin Panel if user is admin
   const displayMenuItems: MenuItem[] = [
@@ -85,6 +88,12 @@ export default function Sidebar({ open, drawerWidth, isMobile, onClose }: Sideba
       title: 'Admin Panel',
       icon: <AdminPanelSettingsIcon />,
       path: '/admin',
+      divider: true
+    }] : []),
+    ...(hasPermission('bond:access') ? [{
+      title: 'Bond Market',
+      icon: <AccountBalanceIcon />,
+      path: '/bonds',
       divider: true
     }] : [])
   ];
@@ -151,6 +160,16 @@ export default function Sidebar({ open, drawerWidth, isMobile, onClose }: Sideba
           </Fragment>
         ))}
       </List>
+      
+      {/* Debug Info */}
+      <Box sx={{ p: 2, mt: 'auto', borderTop: '1px solid #e5e7eb' }}>
+        <Typography variant="caption" display="block" color="text.secondary">
+           Role: {useAdmin().userProfile?.role}
+        </Typography>
+        <Typography variant="caption" display="block" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+           Perms: {JSON.stringify(useAdmin().userProfile?.permissions)}
+        </Typography>
+      </Box>
     </>
   );
 

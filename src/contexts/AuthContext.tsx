@@ -9,13 +9,15 @@ import {
   sendPasswordResetEmail,
   User
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, onSnapshot, getDoc } from "firebase/firestore";
 
 interface UserProfile {
   email?: string;
   role?: string;
   status?: string;
   displayName?: string;
+  photoURL?: string | null;
+  permissions?: string[];
 }
 
 interface AuthContextType {
@@ -99,15 +101,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setLoading(true); // Keep loading while fetching profile
         const userDocRef = doc(db, 'users', user.uid);
         
-        unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
-           if (doc.exists()) {
-             const data = doc.data() as UserProfile;
-             if (data.status === 'disabled') {
+        unsubscribeProfile = onSnapshot(userDocRef, async (userSanpshot) => {
+           if (userSanpshot.exists()) {
+             const userData = userSanpshot.data() as UserProfile;
+             
+             if (userData.status === 'disabled') {
                 signOut(auth);
                 alert("Your account has been disabled.");
                 return;
              }
-             setUserProfile(data);
+
+             // Fetch Role Permissions
+             let permissions: string[] = [];
+             if (userData.role) {
+                try {
+                    const roleDoc = await getDoc(doc(db, 'roles', userData.role));
+                    if (roleDoc.exists()) {
+                        permissions = roleDoc.data().permissions || [];
+                    }
+                } catch (e) {
+                    console.error("Error fetching role permissions:", e);
+                }
+             }
+
+             // If super_admin, give all permissions
+             if (userData.role === 'super_admin') {
+                 permissions = ['all', 'bond:access', 'bond:manage', 'bond:view']; 
+             }
+
+             setUserProfile({ ...userData, permissions });
            } else {
              setUserProfile(null);
            }

@@ -57,7 +57,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-import { collection, getDocs, query, Timestamp, doc, updateDoc, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, query, Timestamp, doc, updateDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { seedDatabase } from '../seed';
 import { useAdmin } from '../hooks/useAdmin';
@@ -91,6 +91,9 @@ const DEFAULT_ROLES: RoleData[] = [
 ];
 
 const AVAILABLE_PERMISSIONS = [
+    // System Wide
+    { id: 'all', label: 'System: Full Super Access (Dangerous)' },
+
     // Navigation App (Admin System)
     { id: 'view_dashboard', label: 'Admin: View Dashboard' },
     { id: 'manage_users', label: 'Admin: Manage Users' },
@@ -109,6 +112,12 @@ const AVAILABLE_PERMISSIONS = [
     { id: 'hr:view_employees', label: 'HR: View Employees' },
     { id: 'hr:manage_payroll', label: 'HR: Manage Payroll' },
     { id: 'hr:manage_leave', label: 'HR: Manage Leave Requests' },
+
+    // Bond App
+    { id: 'bond:access', label: 'Bonds: Access App' },
+    { id: 'bond:view', label: 'Bonds: View Portfolio' },
+    { id: 'bond:manage', label: 'Bonds: Manage Holdings' }, // Create/Edit
+
 ];
 
 const AdminPage = () => {
@@ -145,7 +154,7 @@ const AdminPage = () => {
     fetchRoles();
   }, []);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
   };
   
